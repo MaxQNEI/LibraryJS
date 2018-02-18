@@ -1,21 +1,17 @@
-window.addEventListener('load', ConnectLoader);
+"use strict";
 
-function ConnectLoader() {
-    if(!(this instanceof ConnectLoader)) {
-        return new ConnectLoader;
-    }
+window.addEventListener('load', function() {
+    const classShowConnectLoader = `show-connect-loader`;
 
-    var classShowConnectLoader = `show-connect-loader`;
+    const classWrapper = `conload-wrapper`;
+    const classInnerText = `conload-inner-text`;
+    const classItems = `conload-items`;
+    const classItem = `conload-item`;
 
-    var classWrapper = `conload-wrapper`;
-    var classInnerText = `conload-inner-text`;
-    var classItems = `conload-items`;
-    var classItem = `conload-item`;
+    const DOMWrapper = document.querySelector(`.${classWrapper}`);
+    const DOMItems = DOMWrapper.querySelector(`.${classItems}`);
 
-    var DOMWrapper = document.querySelector(`.${classWrapper}`);
-    var DOMItems = DOMWrapper.querySelector(`.${classItems}`);
-
-    var DOMItemTemplate = document.createElement('div');
+    const DOMItemTemplate = document.createElement('div');
     DOMItemTemplate.classList.add(classItem);
 
     Object.defineProperties(DOMItems, {
@@ -28,7 +24,7 @@ function ConnectLoader() {
     });
 
     //
-    var Updatable = {
+    const Updatable = {
         'item-count': {},
         'item-size': {},
         'item-rush-size': {},
@@ -44,22 +40,22 @@ function ConnectLoader() {
         'show-connect-loader': {},
     };
 
-    var DOMItemCount = document.querySelector('input.item-count');
-    var DOMItemSize = document.querySelector('input.item-size');
-    var DOMItemRushSize = document.querySelector('input.item-rush-size');
-    var DOMItemBorderRadius = document.querySelector('input.item-border-radius');
-    var DOMItemSizeChangeCount = document.querySelector('input.item-size-change-count');
-    var DOMAnimDuration = document.querySelector('input.anim-duration');
-    var DOMAnimDelay = document.querySelector('input.anim-delay');
-    var DOMMoveRadius = document.querySelector('input.move-radius');
-    var DOMKeyframesSteps = document.querySelector('input.keyframes-steps');
-    var DOMAnimReverse = document.querySelector('input.anim-reverse');
-    var DOMAnimFL2R = document.querySelector('input.anim-fl2r');
-    var DOMOutputCSS = document.querySelector('textarea.output-css');
-    var DOMShowConnectLoader = document.querySelector('input.show-connect-loader');
-    var DOMOutputCSSStyle = document.querySelector('style.output-css');
+    const DOMItemCount = document.querySelector('input.item-count');
+    const DOMItemSize = document.querySelector('input.item-size');
+    const DOMItemRushSize = document.querySelector('input.item-rush-size');
+    const DOMItemBorderRadius = document.querySelector('input.item-border-radius');
+    const DOMItemSizeChangeCount = document.querySelector('input.item-size-change-count');
+    const DOMAnimDuration = document.querySelector('input.anim-duration');
+    const DOMAnimDelay = document.querySelector('input.anim-delay');
+    const DOMMoveRadius = document.querySelector('input.move-radius');
+    const DOMKeyframesSteps = document.querySelector('input.keyframes-steps');
+    const DOMAnimReverse = document.querySelector('input.anim-reverse');
+    const DOMAnimFL2R = document.querySelector('input.anim-fl2r');
+    const DOMOutputCSS = document.querySelector('textarea.output-css');
+    const DOMShowConnectLoader = document.querySelector('input.show-connect-loader');
+    const DOMOutputCSSStyle = document.querySelector('style.output-css');
 
-    var Settings = {
+    const Settings = {
         'item-count': parseFloat(DOMItemCount.value),
         'item-size': parseFloat(DOMItemSize.value),
         'item-rush-size': parseFloat(DOMItemRushSize.value),
@@ -123,8 +119,6 @@ function ConnectLoader() {
 
     function Update() {
         if(UpdateTimeout) {
-            // console.log('Wait!');
-
             clearTimeout(UpdateTimeout);
 
             UpdateTimeout = setTimeout(function() {
@@ -337,8 +331,6 @@ function ConnectLoader() {
         output.push(`}`);
 
         if(!UpdateTimeout) {
-            // console.log('Before!');
-
             UpdateTimeout = setTimeout(function(output) {
                 UpdateTimeout = null;
 
@@ -361,9 +353,7 @@ function ConnectLoader() {
     }
 
     function MinifyCSS(source) {
-        console.log('Source In:', source.length);
-
-        var minified = window.MinCSS = source
+        var minified = source
             .replace(/\s{2,}/g, ' ')
             .replace(/\r?\n/g, '')
             .replace(/(\/\*.*?\*\/)/g, '')
@@ -372,15 +362,9 @@ function ConnectLoader() {
             .replace(/; /g, ';')
             .replace(/\, /g, ',')
             .replace(/;\./g, '; .')
-            // .replace(/(\d+)\.[0]+/g, '$1')
             .replace(/([^\d])[0]+(\.\d+)/g, '$1$2')
-            // .replace(/ ?[\+\-] [0]+[\w\%]+/g, '')
-            // .replace(/(\d+\.\d{8})\d+([\w\%])/g, '$1$2')
-            // .replace(/(\d+\.\d*?)[0]+/g, '$1')
             .trim();
         ;
-
-        console.log('Source Out:', minified.length);
 
         return minified;
     }
