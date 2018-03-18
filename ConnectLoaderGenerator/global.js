@@ -51,6 +51,7 @@ window.addEventListener('load', function() {
     const DOMKeyframesSteps = document.querySelector('input.keyframes-steps');
     const DOMAnimReverse = document.querySelector('input.anim-reverse');
     const DOMAnimFL2R = document.querySelector('input.anim-fl2r');
+    const DOMOutputHTML = document.querySelector('textarea.output-html');
     const DOMOutputCSS = document.querySelector('textarea.output-css');
     const DOMShowConnectLoader = document.querySelector('input.show-connect-loader');
     const DOMOutputCSSStyle = document.querySelector('style.output-css');
@@ -85,6 +86,7 @@ window.addEventListener('load', function() {
     DOMAnimFL2R.addEventListener('change', OnInput);
     DOMShowConnectLoader.addEventListener('change', OnInput);
 
+    DOMOutputHTML.addEventListener('click', Copy2Clipboard);
     DOMOutputCSS.addEventListener('click', Copy2Clipboard);
     DOMShowConnectLoader.addEventListener('change', OnShowConnectLoaderChange);
 
@@ -132,7 +134,7 @@ window.addEventListener('load', function() {
         var PI2 = Math.PI * 2;
         var PI_2 = Math.PI / 2;
 
-        var output = [ '@charset "UTF-8";', '' ];
+        var outputcss = [ '@charset "UTF-8";', '' ];
 
         DOMOutputCSSStyle.innerText = '';
 
@@ -165,92 +167,92 @@ window.addEventListener('load', function() {
             }
         }
 
-        output.push(`/**`);
-        output.push(` * Author: MaxQNEI <maxqnei@gmail.com>`);
-        output.push(` *`);
-        output.push(` * Generated in http://untitled.audiowars.space/connect-loader-generator.html`);
-        output.push(` * Generation date: ${(new Date).toLocaleString()}`);
-        output.push(` *`);
-        output.push(` * Settings:`);
-        output.push(` * Element Count:            ${itemCount}`);
-        output.push(` * Element Size:             ${itemSize}px`);
-        output.push(` * Element RushSize:         ${itemRushSize}px`);
-        output.push(` * Element BorderRadius:     ${itemRushSize}px`);
-        output.push(` * Element SizeChangeCount:  ${itemRushSize}px`);
-        output.push(` * Animation Duration:       ${animDuration*1e3}ms`);
-        output.push(` * Animation Delay:          ${animDelay*1e3}ms`);
-        output.push(` * Move Radius:              ${moveRadius}px`);
-        output.push(` * Keyframes Steps:          ${keyframesSteps}ms`);
-        output.push(` * Animation Reverse:        ${animReverse?'Enabled':'Disabled'}`);
-        output.push(` * Animation FromLeft2Right: ${animFL2R?'Enabled':'Disabled'}`);
-        output.push(` */`);
+        outputcss.push(`/**`);
+        outputcss.push(` * Author: MaxQNEI <maxqnei@gmail.com>`);
+        outputcss.push(` *`);
+        outputcss.push(` * Generated in http://untitled.audiowars.space/connect-loader-generator.html`);
+        outputcss.push(` * Generation date: ${(new Date).toLocaleString()}`);
+        outputcss.push(` *`);
+        outputcss.push(` * Settings:`);
+        outputcss.push(` * Element Count:            ${itemCount}`);
+        outputcss.push(` * Element Size:             ${itemSize}px`);
+        outputcss.push(` * Element RushSize:         ${itemRushSize}px`);
+        outputcss.push(` * Element BorderRadius:     ${itemRushSize}px`);
+        outputcss.push(` * Element SizeChangeCount:  ${itemRushSize}px`);
+        outputcss.push(` * Animation Duration:       ${animDuration*1e3}ms`);
+        outputcss.push(` * Animation Delay:          ${animDelay*1e3}ms`);
+        outputcss.push(` * Move Radius:              ${moveRadius}px`);
+        outputcss.push(` * Keyframes Steps:          ${keyframesSteps}ms`);
+        outputcss.push(` * Animation Reverse:        ${animReverse?'Enabled':'Disabled'}`);
+        outputcss.push(` * Animation FromLeft2Right: ${animFL2R?'Enabled':'Disabled'}`);
+        outputcss.push(` */`);
 
-        output.push(`.${classWrapper} {`);
-        output.push(`    position: absolute;`);
-        output.push(`    top: -100%;`);
-        output.push(`    left: -100%;`);
-        output.push(`    right: 0;`);
-        output.push(`    bottom: 0;`);
-        output.push(`    z-index: 100000;`);
-        output.push(`    width: 100%;`);
-        output.push(`    height: 100%;`);
-        output.push(`    background-color: rgba(255, 255, 255, 0.9);`);
-        output.push(`    opacity: 0;`);
-        output.push(`    cursor: default;`);
-        output.push(``);
-        output.push(`    /* FadeOut */`);
-        output.push(`    transition:`);
-        output.push(`        top 0.01s linear 0.31s,`);
-        output.push(`        left 0.01s linear 0.31s,`);
-        output.push(`        opacity 0.3s ease-out;`);
-        output.push(`}`);
-        output.push(``);
+        outputcss.push(`.${classWrapper} {`);
+        outputcss.push(`    position: absolute;`);
+        outputcss.push(`    top: -100%;`);
+        outputcss.push(`    left: -100%;`);
+        outputcss.push(`    right: 0;`);
+        outputcss.push(`    bottom: 0;`);
+        outputcss.push(`    z-index: 100000;`);
+        outputcss.push(`    width: 100%;`);
+        outputcss.push(`    height: 100%;`);
+        outputcss.push(`    background-color: rgba(255, 255, 255, 0.9);`);
+        outputcss.push(`    opacity: 0;`);
+        outputcss.push(`    cursor: default;`);
+        outputcss.push(``);
+        outputcss.push(`    /* FadeOut */`);
+        outputcss.push(`    transition:`);
+        outputcss.push(`        top 0.01s linear 0.31s,`);
+        outputcss.push(`        left 0.01s linear 0.31s,`);
+        outputcss.push(`        opacity 0.3s ease-out;`);
+        outputcss.push(`}`);
+        outputcss.push(``);
 
-        output.push(`body.${classShowConnectLoader} .${classWrapper} {`);
-        output.push(`    top: 0;`);
-        output.push(`    left: 0;`);
-        output.push(`    opacity: 1;`);
-        output.push(``);
-        output.push(`    /* FadeIn */`);
-        output.push(`    transition:`);
-        output.push(`        top 0.01s linear,`);
-        output.push(`        left 0.01s linear,`);
-        output.push(`        opacity 0.3s ease-out 0.01s;`);
-        output.push(`}`);
-        output.push(``);
+        outputcss.push(`body.${classShowConnectLoader} .${classWrapper} {`);
+        outputcss.push(`    top: 0;`);
+        outputcss.push(`    left: 0;`);
+        outputcss.push(`    opacity: 1;`);
+        outputcss.push(``);
+        outputcss.push(`    /* FadeIn */`);
+        outputcss.push(`    transition:`);
+        outputcss.push(`        top 0.01s linear,`);
+        outputcss.push(`        left 0.01s linear,`);
+        outputcss.push(`        opacity 0.3s ease-out 0.01s;`);
+        outputcss.push(`}`);
+        outputcss.push(``);
 
-        output.push(`.${classWrapper} .${classInnerText} {`);
-        output.push(`    position: absolute;`);
-        output.push(`    top: calc(50% - 18px);`);
-        output.push(`    left: calc(50% - 67px);`);
-        output.push(`    z-index: 100000;`);
-        output.push(`    width: 134px;`);
-        output.push(`    height: 36px;`);
-        output.push(`    padding: 8px 4px;`);
-        output.push(`    text-align: center;`);
-        output.push(`}`);
-        output.push(``);
+        outputcss.push(`.${classWrapper} .${classInnerText} {`);
+        outputcss.push(`    position: absolute;`);
+        outputcss.push(`    top: calc(50% - 18px);`);
+        outputcss.push(`    left: calc(50% - 67px);`);
+        outputcss.push(`    z-index: 100000;`);
+        outputcss.push(`    width: 134px;`);
+        outputcss.push(`    height: 36px;`);
+        outputcss.push(`    padding: 8px 4px;`);
+        outputcss.push(`    text-align: center;`);
+        outputcss.push(`}`);
+        outputcss.push(``);
 
-        output.push(`.${classWrapper} .${classItems} .${classItem} {`);
-        output.push(`    position: absolute;`);
-        output.push(`    top: -100%;`);
-        output.push(`    left: -100%;`);
-        output.push(`    z-index: 100001;`);
-        output.push(`    width: ${itemSize}px;`);
-        output.push(`    height: ${itemSize}px;`);
-        output.push(`    border-radius: ${itemSize * (itemBorderRadius / 100)}px;`);
-        output.push(`    background-color: #458ee9;`);
-        output.push(`    opacity: 0;`);
-        output.push(`    animation-name: ConnectLoaderItem;`);
-        output.push(`    animation-duration: ${animDuration}s;`);
-        output.push(`    animation-iteration-count: infinite;`);
-        output.push(`}`);
-        output.push(``);
+        outputcss.push(`.${classWrapper} .${classItems} .${classItem} {`);
+        outputcss.push(`    position: absolute;`);
+        outputcss.push(`    top: -100%;`);
+        outputcss.push(`    left: -100%;`);
+        outputcss.push(`    z-index: 100001;`);
+        outputcss.push(`    width: ${itemSize}px;`);
+        outputcss.push(`    height: ${itemSize}px;`);
+        outputcss.push(`    border-radius: ${itemSize * (itemBorderRadius / 100)}px;`);
+        outputcss.push(`    background-color: #458ee9;`);
+        outputcss.push(`    opacity: 0;`);
+        outputcss.push(`    animation-name: ConnectLoaderItem;`);
+        outputcss.push(`    animation-duration: ${animDuration}s;`);
+        outputcss.push(`    animation-iteration-count: infinite;`);
+        outputcss.push(`}`);
+        outputcss.push(``);
 
-        output.push(`body.${classShowConnectLoader} .${classWrapper} .${classItems} .${classItem} {`);
-        output.push(`    opacity: 1;`);
-        output.push(`}`);
-        output.push(``);
+        outputcss.push(`body.${classShowConnectLoader} .${classWrapper} .${classItems} .${classItem} {`);
+        outputcss.push(`    opacity: 1;`);
+        outputcss.push(`}`);
+        outputcss.push(``);
 
         var a = [], b = [];
 
@@ -267,10 +269,10 @@ window.addEventListener('load', function() {
             b.push(``);
         }
 
-        output = output.concat(a);
-        output = output.concat(b);
+        outputcss = outputcss.concat(a);
+        outputcss = outputcss.concat(b);
 
-        output.push(`@keyframes ConnectLoaderItem {`);
+        outputcss.push(`@keyframes ConnectLoaderItem {`);
 
         var percent = 0, _percent, normalPercent;
         var step = Math.PI / keyframesSteps;
@@ -282,15 +284,15 @@ window.addEventListener('load', function() {
             normalPercent = (_percent / PI2);
             eSize = (normalPercent * (itemRushSize - itemSize) + itemSize);
 
-            output.push(`    ${(normalPercent * 100).toFixed(4)}% {`)
-            output.push(`        width: ${eSize}px;`);
-            output.push(`        height: ${eSize}px;`);
-            output.push(`        border-radius: ${eSize * (itemBorderRadius / 100)}px;`);
-            output.push(`        transform: rotateZ(${Math.pow(_percent, Math.PI)}deg);`);
-            output.push(`        ${GenerateTop(PI_2, eSize, moveRadius)}`);
-            output.push(`        left: ${!animReverse ? -120 : 120}%`);
-            output.push(`    }`);
-            output.push(``);
+            outputcss.push(`    ${(normalPercent * 100).toFixed(4)}% {`)
+            outputcss.push(`        width: ${eSize}px;`);
+            outputcss.push(`        height: ${eSize}px;`);
+            outputcss.push(`        border-radius: ${eSize * (itemBorderRadius / 100)}px;`);
+            outputcss.push(`        transform: rotateZ(${Math.pow(_percent, Math.PI)}deg);`);
+            outputcss.push(`        ${GenerateTop(PI_2, eSize, moveRadius)}`);
+            outputcss.push(`        left: ${!animReverse ? -120 : 120}%`);
+            outputcss.push(`    }`);
+            outputcss.push(``);
 
             percent += step;
         }
@@ -300,15 +302,15 @@ window.addEventListener('load', function() {
             normalPercent = (_percent / PI2);
             eSize = (normalPercent * (itemRushSize - itemSize) + itemSize);
 
-            output.push(`    ${(normalPercent * 100).toFixed(4)}% {`)
-            output.push(`        width: ${eSize}px;`);
-            output.push(`        height: ${eSize}px;`);
-            output.push(`        border-radius: ${eSize * (itemBorderRadius / 100)}px;`);
-            output.push(`        transform: rotateZ(${Math.pow(_percent, Math.PI)}deg);`);
-            output.push(`        ${GenerateTop(_percent, eSize, moveRadius)}`);
-            output.push(`        ${GenerateLeft((animReverse ? _percent : -_percent), eSize, moveRadius)}`);
-            output.push(`    }`);
-            output.push(``);
+            outputcss.push(`    ${(normalPercent * 100).toFixed(4)}% {`)
+            outputcss.push(`        width: ${eSize}px;`);
+            outputcss.push(`        height: ${eSize}px;`);
+            outputcss.push(`        border-radius: ${eSize * (itemBorderRadius / 100)}px;`);
+            outputcss.push(`        transform: rotateZ(${Math.pow(_percent, Math.PI)}deg);`);
+            outputcss.push(`        ${GenerateTop(_percent, eSize, moveRadius)}`);
+            outputcss.push(`        ${GenerateLeft((animReverse ? _percent : -_percent), eSize, moveRadius)}`);
+            outputcss.push(`    }`);
+            outputcss.push(``);
         }
 
         if(animFL2R) {
@@ -316,29 +318,31 @@ window.addEventListener('load', function() {
             normalPercent = (_percent / PI2);
             eSize = (normalPercent * (itemRushSize - itemSize) + itemSize);
 
-            output.push(`    ${(normalPercent * 100).toFixed(4)}% {`)
-            output.push(`        width: ${eSize}px;`);
-            output.push(`        height: ${eSize}px;`);
-            output.push(`        border-radius: ${eSize * (itemBorderRadius / 100)}px;`);
-            output.push(`        transform: rotateZ(${Math.pow(_percent, Math.PI)}deg);`);
-            output.push(`        ${GenerateTop(PI_2, eSize, moveRadius)}`);
-            output.push(`        left: ${animReverse ? -120 : 120}%`);
-            output.push(`    }`);
-            output.push(``);
+            outputcss.push(`    ${(normalPercent * 100).toFixed(4)}% {`)
+            outputcss.push(`        width: ${eSize}px;`);
+            outputcss.push(`        height: ${eSize}px;`);
+            outputcss.push(`        border-radius: ${eSize * (itemBorderRadius / 100)}px;`);
+            outputcss.push(`        transform: rotateZ(${Math.pow(_percent, Math.PI)}deg);`);
+            outputcss.push(`        ${GenerateTop(PI_2, eSize, moveRadius)}`);
+            outputcss.push(`        left: ${animReverse ? -120 : 120}%`);
+            outputcss.push(`    }`);
+            outputcss.push(``);
         }
 
-        output.pop();
-        output.push(`}`);
+        outputcss.pop();
+        outputcss.push(`}`);
 
         if(!UpdateTimeout) {
-            UpdateTimeout = setTimeout(function(output) {
+            UpdateTimeout = setTimeout(function(outputcss, outputhtml) {
                 UpdateTimeout = null;
+
+                DOMOutputHTML.value = FormatHTML(outputhtml);
 
                 DOMOutputCSS.value =
                 DOMOutputCSSStyle.innerText =
-                    output
+                    outputcss
                 ;
-            }, 1000, MinifyCSS(`${output.join(`\n`).trim()}\n`));
+            }, 1000, MinifyCSS(`${outputcss.join(`\n`).trim()}\n`), DOMWrapper.outerHTML);
         }
     }
 
@@ -350,6 +354,48 @@ window.addEventListener('load', function() {
     function GenerateLeft(percent, eSize, radius) {
         var x = parseFloat(((Math.sin(percent)) * radius).toFixed(4));
         return `left: calc(50% - ${eSize/2}px ${(x >= 0 ? `+ ${x}` : `- ${Math.abs(x)}`)}px);`;
+    }
+
+    function FormatHTML(html) {
+        var fb = document.createElement('div');
+        Object.assign(fb.style, {
+            display: 'none'
+        });
+        fb.innerHTML = html;
+
+        A(fb);
+
+        function A(element, lvl) {
+            lvl = (lvl !== undefined ? lvl : -1) + 1;
+            var childs = element.children;
+            B(element);
+            for(var i = 0; i < childs.length; i++) {
+                A(childs[i], lvl);
+                C(childs[i], lvl);
+            }
+            element.outerHTML = `${element.outerHTML}\n${('').padStart((lvl-2)*4, ' ')}`;
+        }
+
+        function B(element) {
+            var chnodes = element.childNodes;
+            for(var i2 = 0; i2 < chnodes.length; i2++) {
+                if(chnodes[i2].nodeName == '#text') {
+                    chnodes[i2].textContent = chnodes[i2].textContent.trim();
+                }
+                
+            }
+            var childs = element.children;
+            for(var i = 0; i < childs.length; i++) {
+                B(childs[i]);
+            }
+        }
+
+        function C(element, lvl,) {
+            element.outerHTML = `\n${('').padStart(lvl*4, ' ')}${element.outerHTML}`;
+            return element;
+        }
+
+        return window.xx = fb.innerHTML.trim().replace(/\n^(\s+)?$/gm, '');
     }
 
     function MinifyCSS(source) {
@@ -374,8 +420,8 @@ window.addEventListener('load', function() {
             return;
         }
 
-        DOMOutputCSS.selectionStart = 0;
-        DOMOutputCSS.selectionEnd = DOMOutputCSS.value.length;
+        this.selectionStart = 0;
+        this.selectionEnd = this.value.length;
         document.execCommand('copy');
     }
 

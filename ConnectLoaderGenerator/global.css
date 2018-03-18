@@ -99,6 +99,7 @@ input[type='checkbox'] {
     font-size: 12px;
 }
 
+textarea.output-html,
 textarea.output-css {
     width: 100%;
     min-height: 100px;
