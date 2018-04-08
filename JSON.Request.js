@@ -2,7 +2,9 @@
 
 Object.defineProperties(JSON, {
 	Request: { enumerable: true, value: function Request(url, data, callback) {
-		!Debug || console.log(`JSON.Request()`);
+		var Debug = (Debug && Debug()) || function() { return false; };
+
+		!Debug() || console.log(`JSON.Request()`);
 
 		const XHR = new XMLHttpRequest;
 
@@ -15,7 +17,17 @@ Object.defineProperties(JSON, {
 
 		XHR.addEventListener('readystatechange', function() {
 			if(XHR.readyState === XHR.DONE) {
-				callback(JSON.parse(XHR.responseText));
+				if(XHR.status === 200) {
+					var ContentType = (XHR.getResponseHeader('Content-Type') || '');
+
+					if(ContentType.match(/^application\/json$/)) {
+						callback(JSON.parse(XHR.responseText));
+					} else {
+						console.error(`JSON.Request(): Response Content-Type '${ContentType}', requires 'application/json'!`);
+					}
+				} else {
+					console.error(`JSON.Request(): ${XHR.status} ${XHR.statusText}`);
+				}
 			}
 		});
 
