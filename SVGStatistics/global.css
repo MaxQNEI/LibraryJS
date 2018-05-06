@@ -36,12 +36,9 @@ a:hover {
 
 #MainWrap {
     width: 90%;
-    /*max-width: 1000px;*/
     height: 100%;
     min-height: 400px;
     margin: auto;
-    /*background-color: #4f4f4f;*/
-    /*box-shadow: 0 0 20px #ffffff;*/
 }
 
 #MainWrap > div {
