@@ -11,6 +11,18 @@ function SVGStatistics(StatisticsObject) {
     const Width = parseInt(Viewbox[0]);
     const Height = parseInt(Viewbox[1]);
 
+    const Defaults = {
+        svg: {
+            fill: '#ffffff',
+        },
+        text: {
+            family: 'sans-serif',
+            size: 12,
+            weight: 'normal',
+            color: '#000000'
+        },
+    };
+
     // Properties ----------------------------------------------------------- //
     var SVG;
 
@@ -24,12 +36,15 @@ function SVGStatistics(StatisticsObject) {
             return SVG;
         } },
 
-        Append: { enumerable: true, value: function() {
+        Generate: { enumerable: true, value: Generate },
+
+        Append: { enumerable: true, value: function Append() {
             return SVG.Append.apply(SVG, arguments);
         } },
 
-        CreateGroup: { enumerable: true, value: CreateGroup },
+        DrawCircle: { enumerable: true, value: DrawCircle },
         DrawLine: { enumerable: true, value: DrawLine },
+        DrawRect: { enumerable: true, value: DrawRect },
         DrawText: { enumerable: true, value: DrawText },
     });
 
@@ -37,99 +52,293 @@ function SVGStatistics(StatisticsObject) {
 
     // Methods -------------------------------------------------------------- //
     function Init() {
-        SVG = CreateElementSVG('svg');
-
-        Object.defineProperties(SVG, {
-            Append: { enumerable: true, value: Append },
-        });
+        SVG = CreateSVGElement('svg');
 
         if(Identifier) { SVG.setAttribute('id', Identifier); }
         else { delete SVG.removeAttribute('id'); }
 
-        SVG.Set('viewBox', `0 0 ${Width} ${Height}`);
+        SVG.Set({
+            'viewBox': `0 0 ${Width} ${Height}`,
+        });
+
+        SVG.Append(
+            DrawRect({
+                x: 0, y: 0,
+                width: SVG.viewBox.baseVal.width,
+                height: SVG.viewBox.baseVal.height,
+                fill: (StatisticsObject.fill || Defaults.svg.fill),
+            })
+        );
 
         return SVGStatisticsInstance;
     }
 
-    function CreateElementSVG(name) {
+    function CreateSVGElement(name) {
         const Element = document.createElementNS(`http://www.w3.org/2000/svg`, name);
+
+        !SVG || (Element.Parent = SVG);
 
         Object.defineProperties(Element, {
             Set: { enumerable: true, value: function Set(n, v) {
                 if(n instanceof Object && v === undefined) {
                     for(var _n in n) {
-                        Element.Set(_n, n[_n]);
+                        this.Set(_n, n[_n]);
                     }
 
-                    return Element;
+                    return this;
                 }
 
-                Element.setAttribute(n, v);
-                return Element;
+                this.setAttribute(n, v);
+                return this;
+            } },
+            Get: { enumerable: true, value: function Get(n) {
+                return this.getAttribute(n);
+            } },
+            Append: { enumerable: true, value: function Append(element) {
+                if(element instanceof Array) {
+                    for(var i = 0; i < element.length; i++) {
+                        this.Append(element[i]);
+                    }
+                    return this;
+                }
+                element.Parent = this;
+                this.appendChild(element);
+                return this;
+            } },
+            GetSize: { enumerable: true, value: function GetSize() {
+                if(this.localName == 'svg') {
+                    return {
+                        width: this.viewBox.baseVal.width,
+                        height: this.viewBox.baseVal.height,
+                    };
+                }
+
+                const SVGHasElement = SVG.contains(this)
+                if(!SVGHasElement) { SVG.appendChild(this); }
+
+                const BCR = this.getBoundingClientRect();
+
+                if(!SVGHasElement) { SVG.removeChild(this); }
+                return { width: BCR.width, height: BCR.height };
+            } },
+            GetWidth: { enumerable: true, value: function GetWidth() {
+                return this.GetSize().width;
+            } },
+            GetHeight: { enumerable: true, value: function GetHeight() {
+                return this.GetSize().height;
             } },
         });
 
         return Element;
     }
 
-    function CreateGroup() {
-        const Group = CreateElementSVG('g');
+    function Generate(data) {
+        if(!data.hasOwnProperty('values')) {
+            throw new Error(`data.values is't defined!`);
+        }
 
-        Object.defineProperties(Group, {
-            Append: { enumerable: true, value: Append },
-        });
+        var type = data.type || 'rect';
+        var color = data.color || '#222222';
+        var radius = data.radius;
+        var drawStyle = data.drawStyle;
 
-        return Group;
+        var values = data.values;
+        var totalX = values.length;
+        var minY = 0, maxY = 0;
+        for(var i = 0; i < values.length; i++) {
+            minY = (minY > values[i] ? values[i] : minY);
+            maxY = (maxY < values[i] ? values[i] : maxY);
+        }
+
+        var SVGWidth = SVG.GetWidth();
+        var SVGHeight = SVG.GetHeight();
+        var ColumnWidth = (SVGWidth / totalX);
+        var Path;
+        var SW = 6, SW_2 = SW / 2; // Stroke width
+
+        var x, y, cx, cy, r
+        for(var i = 0, y, c; i < values.length; i++) {
+            y = (values[i] / maxY);
+
+            if(type == 'rect') {
+                if(color == 'GRADIENT-WARNING') {
+                    c = ([
+                        '#',
+                        parseInt(y * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
+                        parseInt((1 - y) * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
+                        parseInt(0x44).toString(16).padStart(2, 0)
+                    ]).join('');
+                } else {
+                    c = (color || '#4499ff');
+                }
+
+                SVG.Append(DrawRect({
+                    x: ColumnWidth * i,
+                    y: SVGHeight - (y * SVGHeight),
+                    width: ColumnWidth,
+                    height: (y * 100) + '%',
+                    fill: c,
+                }));
+
+                continue;
+            }
+
+            if(type == 'circle') {
+                c = (color || '#4499ff');
+
+                r = radius || (ColumnWidth / 2);
+                cx = (ColumnWidth * i) + r;
+                cy = (SVGHeight - (y * (SVGHeight + (ColumnWidth / 2)))) + r;
+
+                cy = cy + ((cy / SVGHeight) * (-(r * 2) - r) + r);
+
+                SVG.Append(DrawCircle({
+                    cx: cx,
+                    cy: cy,
+                    r: r,
+                    fill: c,
+                }));
+
+                continue;
+            }
+
+            if(type == 'path') {
+                c = (color || '#4499ff');
+
+                Path ||
+                    SVG.Append(Path = DrawPath({
+                        'draw-style': (drawStyle || 'hard'),
+                    }).Set({
+                        'stroke': c,
+                        'stroke-width': SW,
+                        'stroke-linejoin': 'round',
+                        'fill': 'transparent',
+                    }))
+                ;
+
+                x = (ColumnWidth * i) + (ColumnWidth / 2);
+                y = (SVGHeight - (y * SVGHeight));
+
+                y = y + ((y / SVGHeight) * (-SW_2 - SW_2) + SW_2);
+
+                Path.AddPoint(x, y);
+
+                continue;
+            }
+
+            throw new Error(`Unknown data.type '${type}'!`);
+        }
+
+        // !Path || console.log(Path.Get('d'));
+        // !Path || console.log(Path.points);
     }
 
-    function Append(element) {
-        this.appendChild(element);
-        return this;
+    function DrawCircle(params) {
+        const Circle = CreateSVGElement('circle');
+
+        const SetKeys = ['cx', 'cy', 'r', 'fill'];
+        for(var i = 0; i < SetKeys.length; i++) {
+            if(params.hasOwnProperty(SetKeys[i])) {
+                Circle.Set(SetKeys[i], params[SetKeys[i]]);
+            }
+        }
+
+        return Circle;
     }
 
     function DrawLine(params) {
-        var x1 = ((params.x1)) + '%';
-        var y1 = (100 - (params.y1)) + '%';
-        var x2 = ((params.x2)) + '%';
-        var y2 = (100 - (params.y2)) + '%';
-        var color = params.color;
-        var width = params.width;
+        const Line = CreateSVGElement('line');
 
-        if(x1 === undefined || y1 === undefined || x2 === undefined || y2 === undefined) {
-            throw new Error(`x1: ${x1}; y1: ${y1}; x2: ${x2}; y2: ${y2}`);
+        const SetKeys = ['x1', 'y1', 'x2', 'y2', 'stroke'];
+        for(var i = 0; i < SetKeys.length; i++) {
+            if(params.hasOwnProperty(SetKeys[i])) {
+                Line.Set(SetKeys[i], params[SetKeys[i]]);
+            }
         }
-
-        var Line = CreateElementSVG('line');
-        Line.Set({
-            x1: x1,
-            y1: y1,
-            x2: x2,
-            y2: y2,
-            stroke: color,
-            'stroke-width': width,
-        });
 
         return Line;
     }
 
-    function DrawText(params) {
-        var x = (parseInt(params.x)) + '%';
-        var y = (100 - parseInt(params.y)) + '%';
-        var text = (params.text || '').toString().trim() || null;
-        var family = params.family;
-        var size = params.size;
-        var weight = params.weight;
-        var color = params.color;
+    function DrawPath(params) {
+        const Path = CreateSVGElement('path');
 
-        if(x === undefined || y === undefined || !text) {
-            throw new Error(`x: ${x}; y: ${y}; text: ${text}`);
+        const drawstylelist = [ 'hard', 'smooth' ];
+        var drawstyle = (params.drawStyle || params['draw-style']) || 'hard';
+
+        Object.defineProperties(Path, {
+            points: { enumerable: true, value: [] },
+            SetDrawStyle: { enumerable: true, value: function SetDrawStyle(name) {
+                if(!name || !drawstylelist.includes(name)) {
+                    console.warn(`Unknown draw style '${name}'!`);
+                    return false;
+                }
+
+                drawstyle = name;
+                return this.Update();
+            } },
+            AddPoint: { enumerable: true, value: function AddPoint(x, y) {
+                this.points.push([x, y]);
+                return this.Update();
+            } },
+            Update: { enumerable: true, value: function Update() {
+                if(!this.points.length) {
+                    return this;
+                }
+
+                var parentWidth = this.Parent.GetWidth();
+                var parentHeight = this.Parent.GetHeight();
+                var pd = []; // Path description
+                var pp; // Previous point
+                var mp; // Middle point
+                for(var i = 0, p, x, y; i < this.points.length; i++) {
+                    p = this.points[i];
+                    x = p[0];
+                    y = p[1];
+
+                    if(!i) {
+                        pd.push(`M ${x} ${y}`);
+                        (drawstyle != 'hard') || pd.push(`C ${x} ${y}`);
+
+                        (drawstyle != 'smooth') || pd.push(`C ${x} ${y}`);
+                    } else {
+                        (drawstyle != 'hard') || pd.push(`${x} ${y} ${x} ${y} ${x} ${y}`);
+
+                        (drawstyle != 'smooth') || (mp = `${(pp[0]+x)/2} ${(pp[1]+y)/2}`);
+                        (drawstyle != 'smooth') || pd.push(`${mp} ${x} ${y}`);
+                    }
+
+                    pp = p;
+                }
+                (drawstyle != 'hard') || pd.push(`Z`);
+
+                (drawstyle != 'smooth') || (mp = `${(pp[0]+x)/2} ${(pp[1]+y)/2}`);
+                (drawstyle != 'smooth') || pd.push(`${pp[0]} ${pp[1]} ${pp[0]} ${pp[1]} ${pp[0]} ${pp[1]} Z`);
+                this.Set('d', pd.join(' '));
+
+                return this;
+            } },
+        });
+
+        Path.SetDrawStyle(drawstyle);
+
+        return Path;
+    }
+
+    function DrawRect(params) {
+        const Rect = CreateSVGElement('rect');
+
+        const SetKeys = ['x', 'y', 'width', 'height', 'fill'];
+        for(var i = 0; i < SetKeys.length; i++) {
+            if(params.hasOwnProperty(SetKeys[i])) {
+                Rect.Set(SetKeys[i], params[SetKeys[i]]);
+            }
         }
 
-        var Text = CreateElementSVG('text');
-        Text.Set({
-            x: x,
-            y: y,
-        });
+        return Rect;
+    }
+
+    function DrawText(params) {
+        var Text = CreateSVGElement('text');
 
         (family === undefined) || Text.Set('font-family', family);
         (size === undefined) || Text.Set('font-size', size);
@@ -137,6 +346,11 @@ function SVGStatistics(StatisticsObject) {
         (color === undefined) || Text.Set('fill', color);
 
         Text.textContent = text;
+
+        Text.Set({
+            x: x,
+            y: (y + Text.GetHeight()),
+        });
 
         return Text;
     }
