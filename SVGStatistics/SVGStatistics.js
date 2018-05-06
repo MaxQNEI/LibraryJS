@@ -11,16 +11,14 @@ function SVGStatistics(StatisticsObject) {
     const Width = parseInt(Viewbox[0]);
     const Height = parseInt(Viewbox[1]);
 
-    const Defaults = {
-        svg: {
-            fill: '#ffffff',
-        },
-        text: {
-            family: 'sans-serif',
-            size: 12,
-            weight: 'normal',
-            color: '#000000'
-        },
+    const CONSTLIST = {
+        DRAW_TYPE_CIRCLE: 0,
+        DRAW_TYPE_LINE: 1,
+        DRAW_TYPE_PATH: 2,
+        DRAW_TYPE_RECT: 3,
+        DRAW_TYPE_TEXT: 4,
+        DRAW_STYLE_HARD: 0,
+        DRAW_STYLE_SMOOTH: 1,
     };
 
     // Properties ----------------------------------------------------------- //
@@ -29,6 +27,10 @@ function SVGStatistics(StatisticsObject) {
     // Constructor ---------------------------------------------------------- //
     function SVGStatisticsInstance() {
         return SVGStatisticsInstance;
+    }
+
+    for(var k in CONSTLIST) {
+        Object.defineProperty(SVGStatisticsInstance, k, { enumerable: true, value: CONSTLIST[k] });
     }
 
     Object.defineProperties(SVGStatisticsInstance, {
@@ -66,7 +68,7 @@ function SVGStatistics(StatisticsObject) {
                 x: 0, y: 0,
                 width: SVG.viewBox.baseVal.width,
                 height: SVG.viewBox.baseVal.height,
-                fill: (StatisticsObject.fill || Defaults.svg.fill),
+                fill: '#ffffff',
             })
         );
 
@@ -121,11 +123,37 @@ function SVGStatistics(StatisticsObject) {
                 if(!SVGHasElement) { SVG.removeChild(this); }
                 return { width: BCR.width, height: BCR.height };
             } },
+            GetOffset: { enumerable: true, value: function GetOffset() {
+                const isYReverse = ([ 'text' ]).includes(this.localName);
+
+                var Size = this.GetSize();
+                var x = parseFloat(this.Get('x'));
+                var y = parseFloat(this.Get('y'));
+
+                return {
+                    top: y + (isYReverse ? -Size.height : 0),
+                    left: x,
+                    right: x + Size.width,
+                    bottom: y + (!isYReverse ? Size.height : 0),
+                };
+            } },
             GetWidth: { enumerable: true, value: function GetWidth() {
                 return this.GetSize().width;
             } },
             GetHeight: { enumerable: true, value: function GetHeight() {
                 return this.GetSize().height;
+            } },
+            GetOffsetTop: { enumerable: true, value: function GetOffsetTop() {
+                return this.GetOffset().top;
+            } },
+            GetOffsetLeft: { enumerable: true, value: function GetOffsetLeft() {
+                return this.GetOffset().left;
+            } },
+            GetOffsetRight: { enumerable: true, value: function GetOffsetRight() {
+                return this.GetOffset().right;
+            } },
+            GetOffsetBottom: { enumerable: true, value: function GetOffsetBottom() {
+                return this.GetOffset().bottom;
             } },
         });
 
@@ -137,79 +165,122 @@ function SVGStatistics(StatisticsObject) {
             throw new Error(`data.values is't defined!`);
         }
 
-        var type = data.type || 'rect';
-        var color = data.color || '#222222';
-        var radius = data.radius;
-        var drawStyle = data.drawStyle;
+        if(!data.hasOwnProperty('draw')) {
+            console.warn(`data.draw is'n defined! Use defaults: rect / #222222`);
+            data.draw = { type: CONSTLIST.DRAW_TYPE_RECT, fill: '#222222' };
+        }
 
-        var values = data.values;
-        var totalX = values.length;
-        var minY = 0, maxY = 0;
-        for(var i = 0; i < values.length; i++) {
-            minY = (minY > values[i] ? values[i] : minY);
-            maxY = (maxY < values[i] ? values[i] : maxY);
+        if(!data.draw.hasOwnProperty('type')) {
+            console.warn(`data.draw is'n defined! Use defaults: rect`);
+        }
+
+        data.minY = (data.minY || 0);
+        data.maxY = (data.maxY || 0);
+        for(var i = 0; i < data.values.length; i++) {
+            data.minY = (data.minY > data.values[i] ? data.values[i] : data.minY);
+            data.maxY = (data.maxY < data.values[i] ? data.values[i] : data.maxY);
         }
 
         var SVGWidth = SVG.GetWidth();
         var SVGHeight = SVG.GetHeight();
-        var ColumnWidth = (SVGWidth / totalX);
+
+        var ParentOffset = {
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+        };
+
+        if(data.hasOwnProperty('titleY')) {
+            var TitleY;
+            if(data.titleY instanceof Object) {
+                TitleY = DrawText({
+                    text: data.titleY.text,
+                    'font-size': (data.titleY.fontSize || data.titleY['font-size']),
+                    'font-weight': (data.titleY.fontWeight || data.titleY['font-weight']),
+                });
+            } else {
+                TitleY = DrawText({
+                    text: data.titleY,
+                    'font-size': '24px',
+                    'font-weight': 'bold',
+                });
+            }
+
+            var TitleOffsetY = TitleY.SetX(20).SetY(20).GetOffsetBottom();
+            // ParentOffset.top += TitleOffsetY;
+
+            SVG.Append(TitleY);
+        }
+
+        var Parent = SVG;
+        var Parent = CreateSVGElement('svg').Set({
+            // 'x': ParentOffset.left,
+            // 'y': ParentOffset.bottom,
+            'viewBox': `0 0 ${SVGWidth-ParentOffset.right} ${SVGHeight-ParentOffset.bottom}`,
+        });
+        SVG.Append(Parent);
+
+        var ParentWidth = Parent.GetWidth();
+        var ParentHeight = Parent.GetHeight();
+        var ColumnWidth = (ParentWidth / data.values.length);
         var Path;
         var SW = 6, SW_2 = SW / 2; // Stroke width
 
         var x, y, cx, cy, r
-        for(var i = 0, y, c; i < values.length; i++) {
-            y = (values[i] / maxY);
+        for(var i = 0, y, f; i < data.values.length; i++) {
+            y = (data.values[i] / data.maxY);
 
-            if(type == 'rect') {
-                if(color == 'GRADIENT-WARNING') {
-                    c = ([
+            if(data.draw.type == CONSTLIST.DRAW_TYPE_RECT) {
+                if(data.draw.fill == 'GRADIENT-WARNING') {
+                    f = ([
                         '#',
                         parseInt(y * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
                         parseInt((1 - y) * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
                         parseInt(0x44).toString(16).padStart(2, 0)
                     ]).join('');
                 } else {
-                    c = (color || '#4499ff');
+                    f = (data.draw.fill || '#4499ff');
                 }
 
-                SVG.Append(DrawRect({
+                Parent.Append(DrawRect({
                     x: ColumnWidth * i,
-                    y: SVGHeight - (y * SVGHeight),
+                    y: ParentHeight - (y * ParentHeight),
                     width: ColumnWidth,
                     height: (y * 100) + '%',
-                    fill: c,
+                    fill: f,
                 }));
 
                 continue;
             }
 
-            if(type == 'circle') {
-                c = (color || '#4499ff');
+            if(data.draw.type == CONSTLIST.DRAW_TYPE_CIRCLE) {
+                f = (data.draw.fill || '#4499ff');
 
                 r = radius || (ColumnWidth / 2);
                 cx = (ColumnWidth * i) + r;
-                cy = (SVGHeight - (y * (SVGHeight + (ColumnWidth / 2)))) + r;
+                cy = (ParentHeight - (y * (ParentHeight + (ColumnWidth / 2)))) + r;
 
-                cy = cy + ((cy / SVGHeight) * (-(r * 2) - r) + r);
+                cy = cy + ((cy / ParentHeight) * (-(r * 2) - r) + r);
 
-                SVG.Append(DrawCircle({
+                Parent.Append(DrawCircle({
                     cx: cx,
                     cy: cy,
                     r: r,
-                    fill: c,
+                    fill: f,
                 }));
 
                 continue;
             }
 
-            if(type == 'path') {
-                c = (color || '#4499ff');
+            if(data.draw.type == CONSTLIST.DRAW_TYPE_PATH) {
+                f = (data.draw.fill || '#4499ff');
 
                 Path ||
-                    SVG.Append(Path = DrawPath({
-                        'draw-style': (drawStyle || 'hard'),
+                    Parent.Append(Path = DrawPath({
+                        'draw-style': (data.draw.style || 'hard'),
                     }).Set({
-                        'stroke': c,
+                        'stroke': f,
                         'stroke-width': SW,
                         'stroke-linejoin': 'round',
                         'fill': 'transparent',
@@ -217,16 +288,16 @@ function SVGStatistics(StatisticsObject) {
                 ;
 
                 x = (ColumnWidth * i) + (ColumnWidth / 2);
-                y = (SVGHeight - (y * SVGHeight));
+                y = (ParentHeight - (y * ParentHeight));
 
-                y = y + ((y / SVGHeight) * (-SW_2 - SW_2) + SW_2);
+                y = y + ((y / ParentHeight) * (-SW_2 - SW_2) + SW_2);
 
                 Path.AddPoint(x, y);
 
                 continue;
             }
 
-            throw new Error(`Unknown data.type '${type}'!`);
+            throw new Error(`Unknown data.type '${data.draw.type}'!`);
         }
 
         // !Path || console.log(Path.Get('d'));
@@ -249,7 +320,7 @@ function SVGStatistics(StatisticsObject) {
     function DrawLine(params) {
         const Line = CreateSVGElement('line');
 
-        const SetKeys = ['x1', 'y1', 'x2', 'y2', 'stroke'];
+        const SetKeys = ['x1', 'y1', 'x2', 'y2', 'stroke', ];
         for(var i = 0; i < SetKeys.length; i++) {
             if(params.hasOwnProperty(SetKeys[i])) {
                 Line.Set(SetKeys[i], params[SetKeys[i]]);
@@ -340,17 +411,29 @@ function SVGStatistics(StatisticsObject) {
     function DrawText(params) {
         var Text = CreateSVGElement('text');
 
-        (family === undefined) || Text.Set('font-family', family);
-        (size === undefined) || Text.Set('font-size', size);
-        (weight === undefined) || Text.Set('font-weight', weight);
-        (color === undefined) || Text.Set('fill', color);
+        Object.defineProperties(Text, {
+            SetX: { enumerable: true, value: function SetX(x) {
+                return this.Set('x', x);
+            } },
+            SetY: { enumerable: true, value: function SetY(y) {
+                return this.Set('y', (y + this.GetHeight()));
+            } },
+        });
+
+        var x = params.x || 0;
+        var y = params.y || 0;
+        var text = params.text || '';
+
+        const SetKeys = ['x', 'y', 'font-family', 'font-size', 'font-weight', 'fill'];
+        for(var i = 0; i < SetKeys.length; i++) {
+            if(params.hasOwnProperty(SetKeys[i])) {
+                Text.Set(SetKeys[i], params[SetKeys[i]]);
+            }
+        }
 
         Text.textContent = text;
 
-        Text.Set({
-            x: x,
-            y: (y + Text.GetHeight()),
-        });
+        Text.SetX(x).SetY(y);
 
         return Text;
     }
