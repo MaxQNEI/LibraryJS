@@ -127,14 +127,14 @@ function SVGStatistics(StatisticsObject) {
                 const isYReverse = ([ 'text' ]).includes(this.localName);
 
                 var Size = this.GetSize();
-                var x = parseFloat(this.Get('x'));
-                var y = parseFloat(this.Get('y'));
+                var x = parseFloat(this.Get('x')) || 0;
+                var y = parseFloat(this.Get('y')) || 0;
 
                 return {
                     top: y + (isYReverse ? -Size.height : 0),
                     left: x,
-                    right: x + Size.width,
-                    bottom: y + (!isYReverse ? Size.height : 0),
+                    right: this.Parent.GetWidth() - (x + Size.width),
+                    bottom: this.Parent.GetHeight() - (y + (!isYReverse ? Size.height : 0)),
                 };
             } },
             GetWidth: { enumerable: true, value: function GetWidth() {
@@ -207,17 +207,30 @@ function SVGStatistics(StatisticsObject) {
                 });
             }
 
-            var TitleOffsetY = TitleY.SetX(20).SetY(20).GetOffsetBottom();
-            // ParentOffset.top += TitleOffsetY;
+            TitleY.SetX(20).SetY(20);
 
             SVG.Append(TitleY);
+
+            var size = TitleY.GetSize();
+            var offset = TitleY.GetOffset();
+
+            // SVG.Append(DrawCircle({
+            //     'cx': offset.left,
+            //     'cy': (ParentOffset.top += (offset.top + size.height)),
+            //     'r': 5,
+            //     'stroke': 'gray',
+            //     'stroke-width': '2',
+            //     'fill': 'transparent',
+            // }));
+
+            // ParentOffset.top += size.height;
         }
 
         var Parent = SVG;
         var Parent = CreateSVGElement('svg').Set({
-            // 'x': ParentOffset.left,
-            // 'y': ParentOffset.bottom,
-            'viewBox': `0 0 ${SVGWidth-ParentOffset.right} ${SVGHeight-ParentOffset.bottom}`,
+            // 'x': (ParentOffset.left),
+            'y': (ParentOffset.top / 2),
+            'viewBox': `0 0 ${SVGWidth-ParentOffset.left} ${SVGHeight-ParentOffset.top}`,
         });
         SVG.Append(Parent);
 
@@ -231,73 +244,104 @@ function SVGStatistics(StatisticsObject) {
         for(var i = 0, y, f; i < data.values.length; i++) {
             y = (data.values[i] / data.maxY);
 
-            if(data.draw.type == CONSTLIST.DRAW_TYPE_RECT) {
-                if(data.draw.fill == 'GRADIENT-WARNING') {
-                    f = ([
-                        '#',
-                        parseInt(y * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
-                        parseInt((1 - y) * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
-                        parseInt(0x44).toString(16).padStart(2, 0)
-                    ]).join('');
-                } else {
+            switch(data.draw.type) {
+                case CONSTLIST.DRAW_TYPE_RECT:
+                    if(data.draw.fill == 'GRADIENT-WARNING') {
+                        f = ([
+                            '#',
+                            parseInt(y * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
+                            parseInt((1 - y) * (0xFF - 0x44) + 0x44).toString(16).padStart(2, 0),
+                            parseInt(0x44).toString(16).padStart(2, 0)
+                        ]).join('');
+                    } else {
+                        f = (data.draw.fill || '#4499ff');
+                    }
+
+                    Parent.Append(DrawRect({
+                        x: ColumnWidth * i,
+                        y: ParentHeight - (y * ParentHeight),
+                        width: ColumnWidth,
+                        height: (y * 100) + '%',
+                        fill: f,
+                    }));
+                    break;
+
+                case CONSTLIST.DRAW_TYPE_CIRCLE:
                     f = (data.draw.fill || '#4499ff');
-                }
 
-                Parent.Append(DrawRect({
-                    x: ColumnWidth * i,
-                    y: ParentHeight - (y * ParentHeight),
-                    width: ColumnWidth,
-                    height: (y * 100) + '%',
-                    fill: f,
+                    r = radius || (ColumnWidth / 2);
+                    cx = (ColumnWidth * i) + r;
+                    cy = (ParentHeight - (y * (ParentHeight + (ColumnWidth / 2)))) + r;
+
+                    cy = cy + ((cy / ParentHeight) * (-(r * 2) - r) + r);
+
+                    Parent.Append(DrawCircle({
+                        cx: cx,
+                        cy: cy,
+                        r: r,
+                        fill: f,
+                    }));
+                    break;
+
+                case CONSTLIST.DRAW_TYPE_PATH:
+                    f = (data.draw.fill || '#4499ff');
+
+                    Path ||
+                        Parent.Append(Path = DrawPath({
+                            'draw-style': (data.draw.style || 'hard'),
+                        }).Set({
+                            'stroke': f,
+                            'stroke-width': SW,
+                            'stroke-linejoin': 'round',
+                            'fill': 'transparent',
+                        }))
+                    ;
+
+                    x = (ColumnWidth * i) + (ColumnWidth / 2);
+                    y = (ParentHeight - (y * ParentHeight));
+
+                    y = y + ((y / ParentHeight) * (-SW_2 - SW_2) + SW_2);
+
+                    Path.AddPoint(x, y);
+                    break;
+
+                default:
+                    throw new Error(`Unknown data.type '${data.draw.type}'!`);
+                    break;
+            }
+        }
+
+        if(data.ilines) {
+            if(data.ilines instanceof Object) {
+                data.ilines.count = (data.ilines.count || 1);
+            } else {
+                data.ilines = { count: data.ilines };
+            }
+
+            var elements = [];
+            var endcount = data.ilines.count + 1;
+            for(var i = 0, y; i < endcount; i++) {
+
+                y = ((i / endcount)) * 100;
+
+                elements.push(DrawLine({
+                    'x1': 0,
+                    'y1': y + '%',
+                    'x2': '100%',
+                    'y2': y + '%',
+                    'stroke': '#444444',
+                    'stroke-width': '1',
                 }));
 
-                continue;
-            }
-
-            if(data.draw.type == CONSTLIST.DRAW_TYPE_CIRCLE) {
-                f = (data.draw.fill || '#4499ff');
-
-                r = radius || (ColumnWidth / 2);
-                cx = (ColumnWidth * i) + r;
-                cy = (ParentHeight - (y * (ParentHeight + (ColumnWidth / 2)))) + r;
-
-                cy = cy + ((cy / ParentHeight) * (-(r * 2) - r) + r);
-
-                Parent.Append(DrawCircle({
-                    cx: cx,
-                    cy: cy,
-                    r: r,
-                    fill: f,
+                elements.push(DrawText({
+                    'x': 10,
+                    'y': (y + 2) + '%',
+                    'text': data.maxY * (1 - (y / 100)),
+                    'fill': '#222222',
                 }));
-
-                continue;
             }
 
-            if(data.draw.type == CONSTLIST.DRAW_TYPE_PATH) {
-                f = (data.draw.fill || '#4499ff');
-
-                Path ||
-                    Parent.Append(Path = DrawPath({
-                        'draw-style': (data.draw.style || 'hard'),
-                    }).Set({
-                        'stroke': f,
-                        'stroke-width': SW,
-                        'stroke-linejoin': 'round',
-                        'fill': 'transparent',
-                    }))
-                ;
-
-                x = (ColumnWidth * i) + (ColumnWidth / 2);
-                y = (ParentHeight - (y * ParentHeight));
-
-                y = y + ((y / ParentHeight) * (-SW_2 - SW_2) + SW_2);
-
-                Path.AddPoint(x, y);
-
-                continue;
-            }
-
-            throw new Error(`Unknown data.type '${data.draw.type}'!`);
+            Parent.Append(elements);
         }
 
         // !Path || console.log(Path.Get('d'));
@@ -307,7 +351,7 @@ function SVGStatistics(StatisticsObject) {
     function DrawCircle(params) {
         const Circle = CreateSVGElement('circle');
 
-        const SetKeys = ['cx', 'cy', 'r', 'fill'];
+        const SetKeys = ['cx', 'cy', 'r', 'stroke', 'stroke-width', 'fill'];
         for(var i = 0; i < SetKeys.length; i++) {
             if(params.hasOwnProperty(SetKeys[i])) {
                 Circle.Set(SetKeys[i], params[SetKeys[i]]);
@@ -320,7 +364,7 @@ function SVGStatistics(StatisticsObject) {
     function DrawLine(params) {
         const Line = CreateSVGElement('line');
 
-        const SetKeys = ['x1', 'y1', 'x2', 'y2', 'stroke', ];
+        const SetKeys = ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width'];
         for(var i = 0; i < SetKeys.length; i++) {
             if(params.hasOwnProperty(SetKeys[i])) {
                 Line.Set(SetKeys[i], params[SetKeys[i]]);
@@ -413,10 +457,10 @@ function SVGStatistics(StatisticsObject) {
 
         Object.defineProperties(Text, {
             SetX: { enumerable: true, value: function SetX(x) {
-                return this.Set('x', x);
+                return this.Set('x', parseFloat(x));
             } },
             SetY: { enumerable: true, value: function SetY(y) {
-                return this.Set('y', (y + this.GetHeight()));
+                return this.Set('y', (parseFloat(y) + this.GetHeight()));
             } },
         });
 
@@ -424,7 +468,7 @@ function SVGStatistics(StatisticsObject) {
         var y = params.y || 0;
         var text = params.text || '';
 
-        const SetKeys = ['x', 'y', 'font-family', 'font-size', 'font-weight', 'fill'];
+        const SetKeys = ['font-family', 'font-size', 'font-weight', 'fill'];
         for(var i = 0; i < SetKeys.length; i++) {
             if(params.hasOwnProperty(SetKeys[i])) {
                 Text.Set(SetKeys[i], params[SetKeys[i]]);
@@ -432,6 +476,10 @@ function SVGStatistics(StatisticsObject) {
         }
 
         Text.textContent = text;
+
+        var parentSize = Text.Parent.GetSize();
+        x = (x.toString().match(/\%$/) ? ((parseFloat(x) / 100) * parentSize.width) : x);
+        y = (y.toString().match(/\%$/) ? ((parseFloat(y) / 100) * parentSize.height) : y);
 
         Text.SetX(x).SetY(y);
 

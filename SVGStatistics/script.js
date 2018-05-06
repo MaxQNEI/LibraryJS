@@ -28,7 +28,11 @@ function InitExample() {
                 draw: {
                     type: SVG.DRAW_TYPE_PATH,
                     style: SVG.DRAW_STYLE_HARD,
+                    linewidth: 5,
                     color: '#4466ff'
+                },
+                ilines: {
+                    count: 3,
                 },
                 minY: 0,
                 maxY: 100000,
