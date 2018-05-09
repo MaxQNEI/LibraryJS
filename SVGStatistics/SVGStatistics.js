@@ -1,3 +1,14 @@
+/**
+ * SVGStatistics.js
+ *
+ * @license Unlicensed (may be)
+ * @version 0.0.1
+ * @author Maxim Radul "MaxQNEI" <maxqnei@gmail.com>
+ * @created 2018-05-04
+ * @update 2018-05-09
+ * @link https://audiowars.space/
+ */
+
 'use strict';
 
 function SVGStatistics(StatisticsObject) {
