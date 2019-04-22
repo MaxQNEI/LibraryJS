@@ -19,8 +19,6 @@
             this.dispatchEvent(evt);
             arguments[0].dispatchEvent(evt);
             arguments[1] && arguments[1].dispatchEvent(evt);
-
-            OnElementsUpdate(evt);
         } catch(e) {
             console.error(e);
         }
